@@ -1,0 +1,16 @@
+{
+  "servers": {
+    "fal": {
+      "type": "http",
+      "url": "https://mcp.fal.ai/mcp",
+      "headers": {
+        "Authorization": "Bearer ${input:fal-key}"
+      }
+    },
+    "i-am-an-engineer": {
+      "type": "stdio",
+      "command": "uv",
+      "args": ["run", "--project", "${workspaceFolder}", "python", "-m", "i_am_an_engineer.mcp_server"]
+    }
+  }
+}

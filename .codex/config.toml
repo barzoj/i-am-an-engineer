@@ -1,0 +1,6 @@
+# Codex MCP config for i-am-an-engineer
+[mcp_servers.fal]
+url = "https://mcp.fal.ai/mcp"
+
+[mcp_servers.fal.headers]
+Authorization = "Bearer ${FAL_KEY}"

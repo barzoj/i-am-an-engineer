@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "fal": {
+      "url": "https://mcp.fal.ai/mcp",
+      "headers": { "Authorization": "Bearer ${env:FAL_KEY}" }
+    },
+    "i-am-an-engineer": {
+      "command": "uv",
+      "args": ["run", "--project", ".", "python", "-m", "i_am_an_engineer.mcp_server"]
+    }
+  }
+}

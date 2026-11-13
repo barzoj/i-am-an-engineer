@@ -1,0 +1,18 @@
+{
+  "name": "i-am-an-engineer",
+  "version": "0.1.0",
+  "description": "One founder recording session → professional English ad videos performed by their own digital twin (HeyGen / ElevenLabs / fal / local compose).",
+  "author": {
+    "name": "Denis Barzakovsky",
+    "url": "https://github.com/barzoj"
+  },
+  "keywords": [
+    "digital-twin",
+    "heygen",
+    "elevenlabs",
+    "fal",
+    "ads",
+    "agent-skills",
+    "mcp"
+  ]
+}

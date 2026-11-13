@@ -1,0 +1,34 @@
+{
+  "name": "i-am-an-engineer",
+  "version": "0.1.0",
+  "description": "One founder recording session → professional English digital-twin ads (HeyGen / ElevenLabs / fal / local compose).",
+  "contextFileName": "AGENTS.md",
+  "mcpServers": {
+    "fal": {
+      "httpUrl": "https://mcp.fal.ai/mcp",
+      "headers": {
+        "Authorization": "Bearer ${FAL_KEY}"
+      }
+    }
+  },
+  "settings": [
+    {
+      "name": "fal API key",
+      "description": "Key for fal B-roll (https://fal.ai/dashboard/keys).",
+      "envVar": "FAL_KEY",
+      "sensitive": true
+    },
+    {
+      "name": "HeyGen API key",
+      "description": "Key for HeyGen digital twin + A-roll (https://platform.heygen.com).",
+      "envVar": "HEYGEN_API_KEY",
+      "sensitive": true
+    },
+    {
+      "name": "ElevenLabs API key",
+      "description": "Key for ElevenLabs voice clone / TTS.",
+      "envVar": "ELEVENLABS_API_KEY",
+      "sensitive": true
+    }
+  ]
+}

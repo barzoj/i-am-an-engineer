@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# i-am-an-engineer CLI launcher. Self-bootstraps uv + project deps on a bare clone.
+# Never falls back to a naked system Python (that fails on missing httpx).
+set -euo pipefail
+SRC="${BASH_SOURCE[0]}"
+while [ -L "$SRC" ]; do
+  DIR="$(cd -P "$(dirname "$SRC")" && pwd)"
+  SRC="$(readlink "$SRC")"
+  [[ "$SRC" != /* ]] && SRC="$DIR/$SRC"
+done
+ROOT="$(cd -P "$(dirname "$SRC")/.." && pwd)"
+
+iae_die() { echo "iae: $*" >&2; exit 1; }
+
+ensure_uv() {
+  if command -v uv >/dev/null 2>&1; then
+    return 0
+  fi
+  # Common install locations before PATH is refreshed
+  for candidate in "$HOME/.local/bin/uv" "$HOME/.cargo/bin/uv"; do
+    if [ -x "$candidate" ]; then
+      export PATH="$(dirname "$candidate"):$PATH"
+      command -v uv >/dev/null 2>&1 && return 0
+    fi
+  done
+  if [ -n "${IAE_NO_UV_INSTALL:-}" ]; then
+    iae_die "uv not found. Install: curl -LsSf https://astral.sh/uv/install.sh | sh"
+  fi
+  echo "iae: uv not found — installing (https://astral.sh/uv)…" >&2
+  if ! command -v curl >/dev/null 2>&1; then
+    iae_die "curl is required to install uv. Install curl, then: curl -LsSf https://astral.sh/uv/install.sh | sh"
+  fi
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+  export PATH="$HOME/.local/bin:$PATH"
+  command -v uv >/dev/null 2>&1 || iae_die "uv install finished but uv is not on PATH; add ~/.local/bin to PATH and retry"
+}
+
+if [ -n "${IAE_NO_UV:-}" ]; then
+  iae_die "IAE_NO_UV is set; unset it. bin/iae always uses uv so deps (httpx, faster-whisper) resolve."
+fi
+
+ensure_uv
+cd "$ROOT"
+# uv run creates .venv and installs pyproject deps on first invocation.
+exec uv run --quiet --project "$ROOT" python -m i_am_an_engineer "$@"

@@ -1,0 +1,13 @@
+{
+  "name": "i-am-an-engineer",
+  "owner": {
+    "name": "Denis Barzakovsky"
+  },
+  "plugins": [
+    {
+      "name": "i-am-an-engineer",
+      "source": "./",
+      "description": "One founder recording session → professional English digital-twin ads."
+    }
+  ]
+}
