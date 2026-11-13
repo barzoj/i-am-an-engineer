@@ -354,21 +354,33 @@ def make_synthetic_clip(
     return dest
 
 
+# Default copy is long enough that espeak-ng at default rate is ~18–22s.
+# Short one-liners are only ~9s — do not claim 20s without this (or looping).
+SPOKEN_SAMPLE_TEXT = (
+    "Most founders cannot deliver a calm confident take on camera. "
+    "They freeze, they rush, or they sound nothing like the product they ship. "
+    "Record one clean session instead. Train your own digital twin on that footage. "
+    "Clone the voice. Then cut a professional English ad with multiple framings, "
+    "captions, B-roll, and loudness for Meta and LinkedIn. "
+    "One recording session. Many ads. Your face. Your voice."
+)
+
+
 def make_spoken_sample(
     dest: Path,
     *,
-    text: str = (
-        "Most founders cannot deliver a calm confident take on camera. "
-        "Record once. Train your digital twin. Then cut a professional English ad."
-    ),
+    text: str = SPOKEN_SAMPLE_TEXT,
     width: int = 1280,
     height: int = 720,
     fps: int = 30,
+    seconds: float = 20.0,
 ) -> Path:
     """Realistic acceptance sample: solid color + espeak-ng English TTS (no faces).
 
-    Requires ffmpeg and espeak-ng. Dry-run captions are burned from ASR of this audio.
-    Synthetic samples are for dry-run only — never train a HeyGen twin on them.
+    Guarantees ~`seconds` duration (default 20): speaks `text`, then loops/pads the
+    WAV with ffmpeg so the mux is exactly that length. Requires ffmpeg and espeak-ng.
+    Dry-run captions come from ASR of this audio (wording may differ slightly from
+    the TTS script). Synthetic samples are dry-run only — never train a twin on them.
     """
     if not which("ffmpeg"):
         die("ffmpeg required to generate spoken sample")
@@ -380,17 +392,22 @@ def make_spoken_sample(
     espeak = which("espeak-ng") or which("espeak")
     with tempfile.TemporaryDirectory() as td:
         wav = Path(td) / "tts.wav"
-        run([espeak, "-v", "en-us", "-w", str(wav), text], check=True)
-        # Probe duration from wav via ffprobe when possible; else let -shortest trim.
+        # Slightly slower rate helps land nearer 20s of speech before looping.
+        run([espeak, "-v", "en-us", "-s", "140", "-w", str(wav), text], check=True)
+        # Video exactly `seconds`; loop speech (-stream_loop -1) then -t to hard-trim.
         cmd = [
             "ffmpeg",
             "-y",
             "-f",
             "lavfi",
             "-i",
-            f"color=c=0x1a1a2e:s={width}x{height}:r={fps}",
+            f"color=c=0x1a1a2e:s={width}x{height}:d={seconds}:r={fps}",
+            "-stream_loop",
+            "-1",
             "-i",
             str(wav),
+            "-t",
+            str(seconds),
             "-c:v",
             "libx264",
             "-pix_fmt",
