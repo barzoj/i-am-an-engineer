@@ -2,6 +2,8 @@
 
   iae elevenlabs key set
   iae elevenlabs key status
+  iae elevenlabs key verify   # GET /v1/user (free)
+  iae elevenlabs key clear
 """
 from __future__ import annotations
 

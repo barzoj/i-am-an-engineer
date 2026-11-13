@@ -2,6 +2,7 @@
 
   iae heygen key set
   iae heygen key status
+  iae heygen key verify   # GET /v3/users/me (free)
   iae heygen key clear
 """
 from __future__ import annotations

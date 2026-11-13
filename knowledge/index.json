@@ -1,5 +1,10 @@
 [
   {
+    "path": "backends/get-api-keys.md",
+    "title": "Get API keys (HeyGen / ElevenLabs / fal)",
+    "date": "2026-11-13"
+  },
+  {
     "path": "backends/heygen-api-vs-pro.md",
     "title": "HeyGen API credits vs Pro plan",
     "date": "2026-11-13"

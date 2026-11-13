@@ -2,6 +2,8 @@
 
   iae fal key set
   iae fal key status
+  iae fal key verify   # GET /v1/account/billing?expand=credits (free)
+  iae fal key clear
 """
 from __future__ import annotations
 

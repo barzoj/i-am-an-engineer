@@ -17,9 +17,9 @@ Subcommands (see `iae --help`):
   publish    consistency / safety checks before sharing
   kb         knowledge base search / new / check / index
   backend    list configured backends
-  heygen     HeyGen API helpers and `key set|status|clear`
-  elevenlabs ElevenLabs helpers and `key set|status|clear`
-  fal        fal helpers and `key set|status|clear`
+  heygen     HeyGen API helpers and `key set|status|verify|clear`
+  elevenlabs ElevenLabs helpers and `key set|status|verify|clear`
+  fal        fal helpers and `key set|status|verify|clear`
   deepinfra  DeepInfra key helpers (optional later backend)
 """
 

@@ -24,7 +24,7 @@ iae doctor
 |---|---|
 | Doctor / keys board | `iae doctor`, `iae backend status` (exit 0 even with no keys) |
 | Scaffold | `iae init --name "<Brand>"` |
-| Keys | `iae heygen\|elevenlabs\|fal key set` |
+| Keys | `skills/setup-backends` get-api-keys → `iae <svc> key set` → `key verify` / `iae doctor --keys` |
 | No-API path | `iae run "<video>" --dry-run` |
 | Ingest URL/path | `iae ingest "<path-or-url>" --kind motion` |
 | Twin / voice / A-roll / B-roll | see companion skills |

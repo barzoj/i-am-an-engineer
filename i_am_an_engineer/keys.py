@@ -217,7 +217,13 @@ def key_status(svc: Service | str) -> dict:
     return {"service": svc.name, "source": None, "key": None, "present": False}
 
 
-def cmd_key(svc_name: str, action: str, *, from_file: str | None = None) -> None:
+def cmd_key(
+    svc_name: str,
+    action: str,
+    *,
+    from_file: str | None = None,
+    as_json: bool = False,
+) -> None:
     svc = get_service(svc_name)
     kf = key_file(svc)
     if action == "set":
@@ -240,6 +246,24 @@ def cmd_key(svc_name: str, action: str, *, from_file: str | None = None) -> None
         else:
             print(f"{svc.name}: not set (env {svc.env_var} / keyring / {kf})")
         return
+    if action == "verify":
+        from i_am_an_engineer.common import emit
+        from i_am_an_engineer.verify import verify_service
+
+        result = verify_service(svc_name)
+        if as_json:
+            emit(result, as_json=True)
+        else:
+            status = "OK" if result.get("ok") else "FAIL"
+            print(f"{svc.name} key verify: {status} — {result.get('message') or result.get('error')}")
+            if result.get("summary"):
+                for k, v in result["summary"].items():
+                    if v is not None and k != "http_status":
+                        print(f"  {k}: {v}")
+            print(f"  endpoint: {result.get('endpoint')} ({result.get('cost')})")
+        if not result.get("ok"):
+            raise SystemExit(1)
+        return
     if action == "clear":
         cleared = []
         if keyring_available() and keyring_clear(svc):
@@ -253,13 +277,19 @@ def cmd_key(svc_name: str, action: str, *, from_file: str | None = None) -> None
 
 
 def add_key_subparser(parent, service: str) -> None:
-    """Attach `key set|status|clear` under a backend group."""
-    p = parent.add_parser("key", help=f"store / show / clear the {service} API key")
+    """Attach `key set|status|verify|clear` under a backend group."""
+    p = parent.add_parser("key", help=f"store / show / verify / clear the {service} API key")
     sp = p.add_subparsers(dest="key_action", metavar="<action>")
     s = sp.add_parser("set", help="store the key (keyring or ~/.secrets)")
     s.add_argument("--from-file", help="read the key from a file instead of a hidden prompt")
     s.set_defaults(func=lambda a, svc=service: cmd_key(svc, "set", from_file=a.from_file))
     st = sp.add_parser("status", help="show which source provides the key (masked)")
     st.set_defaults(func=lambda a, svc=service: cmd_key(svc, "status"))
+    v = sp.add_parser(
+        "verify",
+        help="cheap authenticated call to validate the key (no generation spend)",
+    )
+    v.add_argument("--json", action="store_true", help="print JSON result")
+    v.set_defaults(func=lambda a, svc=service: cmd_key(svc, "verify", as_json=a.json))
     c = sp.add_parser("clear", help="remove the stored key")
     c.set_defaults(func=lambda a, svc=service: cmd_key(svc, "clear"))

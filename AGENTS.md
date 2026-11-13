@@ -35,7 +35,7 @@ Acceptance bar: a fresh agent that only installed this plugin/skills must comple
   - Every group has `--help`: `init`, `doctor`, `record`, `script`, `ingest`, `transcribe`, `twin`, `voice`, `generate`, `broll`, `compose`, `export`, `run`, `publish`, `kb`, `backend`, plus `heygen` / `elevenlabs` / `fal` / `deepinfra` for `key set|status|clear`.
   - **`iae run <input> --dry-run`**: ingest+normalize → **faster-whisper** transcript → captions from that audio → framings / loudness → export. **No API keys.**
   - **`iae backend status`**: lists all backends + keys; **exit 0 even when keys are missing**.
-- **Keys:** `iae <backend> key set` → OS keyring or `~/.secrets`. Env vars win.
+- **Keys:** follow `skills/setup-backends` (get-api-keys). `iae <backend> key set` → keyring/`~/.secrets`. `iae <backend> key verify` and `iae doctor --keys` use free account endpoints only. Env vars win.
 - **MCP:** fal at `https://mcp.fal.ai/mcp` (needs `FAL_KEY`); optional `python -m i_am_an_engineer.mcp_server`.
 - **Skills** live in `skills/` and are copied to `.agents/skills` and `.claude/skills` (a test fails while they differ).
 
