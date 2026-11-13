@@ -1,0 +1,12 @@
+{
+  "name": "i-am-an-engineer",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "OpenCode plugin for i-am-an-engineer: exposes the iae CLI as a tool and registers the fal MCP server.",
+  "license": "MIT",
+  "repository": "https://github.com/barzoj/i-am-an-engineer",
+  "exports": "./index.ts",
+  "peerDependencies": {
+    "@opencode/plugin": "*"
+  }
+}

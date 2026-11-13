@@ -1,0 +1,14 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "fal": {
+      "type": "streamable-http",
+      "url": "https://mcp.fal.ai/mcp",
+      "headers": { "Authorization": "Bearer ${FAL_KEY}" }
+    },
+    "i-am-an-engineer": {
+      "command": "uv",
+      "args": ["run", "--project", "${workspaceFolder}", "python", "-m", "i_am_an_engineer.mcp_server"]
+    }
+  }
+}

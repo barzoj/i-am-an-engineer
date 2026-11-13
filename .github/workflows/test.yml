@@ -1,0 +1,30 @@
+name: test
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
+      - name: ffmpeg
+        timeout-minutes: 8
+        continue-on-error: true
+        run: |
+          sudo rm -f /var/lib/man-db/auto-update
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg
+      - name: unit tests
+        run: uv run --with pytest pytest -q tests
+      - name: CLI help
+        run: |
+          ./bin/iae --help
+          for g in init doctor record script ingest transcribe twin voice generate broll compose export run publish kb backend heygen elevenlabs fal deepinfra; do
+            ./bin/iae "$g" --help >/dev/null
+          done
+      - name: knowledge + publish check
+        run: |
+          ./bin/iae kb check --index
+          ./bin/iae publish check .
+      - name: smoke (uv tool install + skills + dry-run)
+        run: bash ./scripts/smoke.sh

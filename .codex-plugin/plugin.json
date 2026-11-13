@@ -1,0 +1,39 @@
+{
+  "name": "i-am-an-engineer",
+  "version": "0.1.0",
+  "description": "One founder recording session → professional English ad videos performed by their own digital twin (HeyGen / ElevenLabs / fal / local compose).",
+  "author": {
+    "name": "Denis Barzakovsky",
+    "url": "https://github.com/barzoj"
+  },
+  "homepage": "https://github.com/barzoj/i-am-an-engineer",
+  "repository": "https://github.com/barzoj/i-am-an-engineer",
+  "license": "MIT",
+  "keywords": [
+    "digital-twin",
+    "heygen",
+    "elevenlabs",
+    "fal",
+    "ads",
+    "agent-skills",
+    "mcp"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "i-am-an-engineer",
+    "shortDescription": "Founder digital-twin ads",
+    "longDescription": "Turn one recording session into professional English ads performed by the founder's own digital twin.",
+    "developerName": "Denis Barzakovsky",
+    "category": "Developer Tools",
+    "capabilities": ["Interactive", "Write"],
+    "websiteURL": "https://github.com/barzoj/i-am-an-engineer",
+    "defaultPrompt": [
+      "Walk me through one recording session to a finished Meta/LinkedIn ad with my digital twin",
+      "Set up HeyGen, ElevenLabs and fal keys for iae",
+      "Search the knowledge base for HeyGen API vs Pro plan"
+    ],
+    "brandColor": "#0B3D2E",
+    "screenshots": []
+  }
+}

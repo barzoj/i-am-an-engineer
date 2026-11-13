@@ -1,0 +1,16 @@
+{
+  "$schema": "https://code.claude.com/schemas/marketplace.json",
+  "name": "i-am-an-engineer",
+  "description": "Skills, iae CLI, fal MCP and knowledge base for founder digital-twin ads.",
+  "owner": {
+    "name": "Denis Barzakovsky",
+    "url": "https://github.com/barzoj"
+  },
+  "plugins": [
+    {
+      "name": "i-am-an-engineer",
+      "source": "./",
+      "description": "One founder recording session → professional English digital-twin ads."
+    }
+  ]
+}

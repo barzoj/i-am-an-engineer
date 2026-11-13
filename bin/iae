@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# i-am-an-engineer CLI launcher. Works from a clone, a Claude Code plugin install, or a PATH symlink.
+# iae init | iae doctor | iae heygen key set | iae compose --help ...
+# Uses uv when available; otherwise system python3 (needs `pip install -e .` deps).
+set -euo pipefail
+SRC="${BASH_SOURCE[0]}"
+while [ -L "$SRC" ]; do
+  DIR="$(cd -P "$(dirname "$SRC")" && pwd)"
+  SRC="$(readlink "$SRC")"
+  [[ "$SRC" != /* ]] && SRC="$DIR/$SRC"
+done
+ROOT="$(cd -P "$(dirname "$SRC")/.." && pwd)"
+if command -v uv >/dev/null 2>&1 && [ -z "${IAE_NO_UV:-}" ]; then
+  exec uv run --quiet --project "$ROOT" python -m i_am_an_engineer "$@"
+fi
+PY="$(command -v python3 || command -v python)"
+PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}" exec "$PY" -m i_am_an_engineer "$@"
