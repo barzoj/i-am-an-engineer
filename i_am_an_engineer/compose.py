@@ -21,8 +21,16 @@ RATIO_TO_SIZE = {
 }
 
 
-def caption_ass(lines: list[str], *, disclosure: str | None = None) -> str:
-    """Minimal ASS with English burn-in captions."""
+def caption_ass(
+    lines: list[str] | list[dict],
+    *,
+    disclosure: str | None = None,
+) -> str:
+    """Minimal ASS with English burn-in captions.
+
+    `lines` may be plain strings (3s each) or timed dicts
+    `{start, end, text}` from a faster-whisper transcript.
+    """
     header = """[Script Info]
 ScriptType: v4.00+
 PlayResX: 1080
@@ -43,12 +51,22 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         )
     t = 0.0
     for line in lines:
-        start = _ts(t)
-        end = _ts(t + 3.0)
+        if isinstance(line, dict):
+            text = str(line.get("text") or "").strip()
+            if not text:
+                continue
+            start = _ts(float(line.get("start") or t))
+            end = _ts(float(line.get("end") or (float(line.get("start") or t) + 3.0)))
+        else:
+            text = str(line).strip()
+            if not text:
+                continue
+            start = _ts(t)
+            end = _ts(t + 3.0)
+            t += 3.0
         events.append(
-            f"Dialogue: 0,{start},{end},Default,,0,0,0,,{line.replace(',', '\\,')}"
+            f"Dialogue: 0,{start},{end},Default,,0,0,0,,{text.replace(',', '\\,')}"
         )
-        t += 3.0
     return header + "\n".join(events) + "\n"
 
 
@@ -142,7 +160,26 @@ def cmd_compose(args) -> None:
         die("compose needs --aroll path to an A-roll mp4 (or --plan-only)")
     if not which("ffmpeg"):
         die("ffmpeg not found on PATH")
-    lines = teleprompter_lines(script_text(root, data))
+    lines: list = []
+    captions_from = getattr(args, "captions_from", None)
+    caption_source = "script"
+    if captions_from:
+        cpath = Path(captions_from)
+        if not cpath.is_file():
+            cpath = root / captions_from
+        if not cpath.is_file():
+            die(f"captions transcript not found: {captions_from}")
+        tr = json.loads(cpath.read_text(encoding="utf-8"))
+        from i_am_an_engineer.transcribe import caption_lines_from_transcript
+
+        lines = caption_lines_from_transcript(tr)
+        caption_source = f"transcript:{cpath}"
+        if not lines:
+            die(f"transcript has no captionable text: {cpath}")
+    else:
+        lines = teleprompter_lines(script_text(root, data))
+    plan["caption_source"] = caption_source
+    plan_path.write_text(json.dumps(plan, indent=2), encoding="utf-8")
     ass_text = caption_ass(lines, disclosure=plan.get("disclosure_label"))
     ass_path = root / "work" / "compose" / "captions.ass"
     ass_path.write_text(ass_text, encoding="utf-8")
@@ -172,6 +209,10 @@ def register(sub) -> None:
     )
     p.add_argument("--aroll", help="A-roll video path")
     p.add_argument("--broll", nargs="*", default=[], help="B-roll clips (reserved for future cut list)")
+    p.add_argument(
+        "--captions-from",
+        help="transcript JSON from `iae transcribe` (preferred for dry-run; burns spoken words)",
+    )
     p.add_argument("--plan-only", action="store_true", help="write plan.json without running ffmpeg")
     p.add_argument("--project")
     p.set_defaults(func=cmd_compose)

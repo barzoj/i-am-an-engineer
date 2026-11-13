@@ -23,7 +23,9 @@ Pick your agent. Each gets the same skills (Agent Skills format), MCP configs, a
 
 ```bash
 uv tool install git+https://github.com/barzoj/i-am-an-engineer
-# or from a clone: export PATH="$PWD/bin:$PATH"
+# or from a clone — bin/iae self-bootstraps uv + deps (do not use system python alone):
+export PATH="$PWD/bin:$PATH"
+iae doctor
 iae --help
 ```
 

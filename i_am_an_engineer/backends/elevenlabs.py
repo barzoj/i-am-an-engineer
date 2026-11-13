@@ -88,13 +88,25 @@ class ElevenLabsVoiceBackend(VoiceBackend):
     name = "elevenlabs"
 
     def __init__(self, client: ElevenLabsClient | None = None) -> None:
-        self.client = client or ElevenLabsClient()
+        self._client = client
+
+    @property
+    def client(self) -> ElevenLabsClient:
+        if self._client is None:
+            self._client = ElevenLabsClient()
+        return self._client
 
     def status(self) -> dict[str, Any]:
         from i_am_an_engineer.keys import key_status
 
         st = key_status(get_service("elevenlabs"))
-        return {"name": self.name, "configured": st["present"], "key": st}
+        return {
+            "name": self.name,
+            "role": "voice",
+            "configured": bool(st["present"]),
+            "key_present": bool(st["present"]),
+            "key_source": st.get("source"),
+        }
 
     def clone_instant(self, samples: list[Path], *, name: str) -> VoiceCloneResult:
         return self.client.clone_instant(samples, name=name)

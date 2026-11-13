@@ -1,8 +1,8 @@
 # Testing
 
-## What “done” means for this toolkit
+## What “done” means
 
-The **product is the skills**, not the CLI alone. A fresh agent that only installed this repo as a plugin and is given **a video file + “make me an ad”** must discover **make-founder-ad** and complete the flow by following skills.
+The **product is the skills**. A fresh agent that only installed this repo as a plugin and is given **a video file + “make me an ad”** must discover **make-founder-ad** and complete the flow by following skills.
 
 ## Agent-level acceptance test (manual)
 
@@ -11,52 +11,74 @@ Use a **clean** agent session with no prior chat about this repo.
 ### Install (pick one)
 | Surface | Install |
 |---|---|
-| Cursor | Clone or Marketplace; agent reads `AGENTS.md` + `.cursor/mcp.json` + `.agents/skills` |
+| Cursor | Clone or Marketplace; reads `AGENTS.md` + `.cursor/mcp.json` + `.agents/skills` |
 | Claude Code | `/plugin marketplace add barzoj/i-am-an-engineer` then `/plugin install i-am-an-engineer@i-am-an-engineer` |
-| Skills only | `npx skills add https://github.com/barzoj/i-am-an-engineer` (or `npx skills add .` from a clone) |
-| CLI | `uv tool install git+https://github.com/barzoj/i-am-an-engineer` |
+| Skills only | `npx skills add https://github.com/barzoj/i-am-an-engineer` (or `npx skills add .`) |
+| CLI | `uv tool install git+https://github.com/barzoj/i-am-an-engineer` **or** from a clone: `export PATH="$PWD/bin:$PATH"` — `bin/iae` self-bootstraps `uv` + deps |
 
-Also ensure `ffmpeg` is on PATH (`iae doctor`).
+Also: **ffmpeg**, and for the spoken sample below: **espeak-ng**.
+
+### Bootstrap check
+On a bare clone, the first command must be:
+
+```bash
+export PATH="$PWD/bin:$PATH"
+iae doctor
+```
+
+`bin/iae` installs `uv` if needed and uses `uv run` (never naked system Python). If you see `ModuleNotFoundError: httpx`, you bypassed `bin/iae`.
+
+### Realistic acceptance sample (ffmpeg + espeak-ng)
+
+Do **not** use the tiny silent/sine `make_synthetic_clip` for acceptance — dry-run captions come from **ASR of spoken English**. Build a no-face spoken plate:
+
+```bash
+# ~20s English TTS + solid color (no faces). Dry-run only — never twin-train on this.
+sudo apt-get install -y espeak-ng ffmpeg   # once
+
+espeak-ng -v en-us -w /tmp/iae-tts.wav \
+  "Most founders cannot deliver a calm confident take on camera. Record once. Train your digital twin. Then cut a professional English ad."
+
+ffmpeg -y -f lavfi -i color=c=0x1a1a2e:s=1280x720:r=30 \
+  -i /tmp/iae-tts.wav -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest \
+  -movflags +faststart sample.mov
+
+# Or via the helper:
+iae doctor   # ensure env
+uv run --project . python -c "
+from pathlib import Path
+from i_am_an_engineer.media import make_spoken_sample
+make_spoken_sample(Path('sample.mov'))
+"
+```
+
+`sample.mov` / `ADLOG.md` / local `project.yaml` are **gitignored**.
 
 ### Prompt
 Give the agent **only**:
-1. A sample clip path (synthetic is fine — see below), and  
-2. The sentence: **make me an ad**
-
-Do not name skills or spell out the pipeline.
+1. Path to `sample.mov` (or any spoken English clip), and  
+2. **make me an ad**
 
 ### Expected behavior
-1. Discovers / loads **make-founder-ad** (or clearly follows its loop).
-2. Runs `iae doctor` / init as needed.
-3. Ingests the clip (normalize if `.mov`/HEVC-like) or `iae run <clip> --dry-run`.
-4. Produces compose framings + captions + loudness without requiring the human to invent ffmpeg flags.
-5. If keys are missing: still finishes the **dry-run** path, then follows **setup-backends** before twin/A-roll.
-6. Never commits recordings/secrets; runs `iae publish check` before claiming ship-ready.
+1. Loads **make-founder-ad**; bootstraps `bin/iae`.
+2. Runs `iae run <clip> --dry-run` without requiring keys.
+3. Transcript engine is **faster-whisper** (not stub); `captions.ass` matches spoken words (not template `script/en.md` alone).
+4. `iae backend status` exits **0** and lists heygen / elevenlabs / fal even when keys are missing.
+5. Does **not** twin-train on synthetic samples; stops twin path until real footage + keys + consent.
+6. `iae publish check` does not warn about gitignored `sample.mov`.
 
 ### Expected artifacts (dry-run / no keys)
-- `project.yaml`
-- `recordings/motion/*.mp4` (normalized H.264 CFR)
-- `work/transcripts/*.json`
-- `work/compose/ad_*.mp4` (ratios from project)
-- `work/compose/captions.ass`
-- `exports/manifest.json`
-- `work/dry_run.json`
+- `project.yaml`, `recordings/motion/*.mp4` (normalized H.264 CFR)
+- `work/transcripts/*.json` with `"engine": "faster-whisper"` and real `text` / `segments`
+- `work/compose/captions.ass` sourced from that transcript
+- `work/compose/ad_*.mp4`, `exports/manifest.json`, `work/dry_run.json`
 
-### Expected artifacts (full path with keys)
-- Twin IDs + `consent.granted: true`
-- `work/aroll/*.json` (+ downloaded masters)
-- `work/broll/*`
-- Platform folders under `exports/meta`, `exports/linkedin`
-- `iae publish check` → PASS
-
-## Synthetic sample clip (no faces)
-
-CI and local smoke generate a tiny solid-color MP4 with ffmpeg (no real people):
-
-```bash
-python -c "from pathlib import Path; from i_am_an_engineer.media import make_synthetic_clip; make_synthetic_clip(Path('/tmp/iae-sample.mp4'))"
-iae run /tmp/iae-sample.mp4 --dry-run --project /tmp/iae-dry --ratios 9:16 1:1
-```
+### Synthetic vs real
+| Sample | OK for |
+|---|---|
+| ffmpeg + espeak spoken plate / `make_spoken_sample` | dry-run acceptance only |
+| Tiny `make_synthetic_clip` (sine, no speech) | unit tests for normalize — **not** dry-run ASR |
+| Real founder iPhone `.mov` | dry-run **and** twin training (after consent) |
 
 ## Automated tests
 
@@ -65,18 +87,4 @@ uv run --with pytest pytest -q tests
 ./scripts/smoke.sh
 ```
 
-`scripts/smoke.sh` (also run in GitHub Actions):
-1. `uv tool install .` (or project install)
-2. `npx skills add .` when network/npm available (non-fatal soft check of `skills/` layout if npx missing)
-3. Generate synthetic clip
-4. `iae run <clip> --dry-run` and assert compose outputs exist
-5. `iae --help` + each group `--help`
-6. `iae publish check`
-
-## Unit tests (no real APIs)
-- `project.yaml` schema + pipeline plan
-- teleprompter export
-- media URL rewrite + normalize filter graph
-- HeyGen / ElevenLabs / fal clients with **httpx mock transport** (no keys, no network)
-- publish-check fail cases
-- skill copy equality (`.agents/skills` and `.claude/skills` match `skills/`)
+`scripts/smoke.sh`: `uv tool install .`, `npx skills add .`, spoken sample + `iae run --dry-run`, help checks, unit tests.

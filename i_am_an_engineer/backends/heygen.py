@@ -203,13 +203,25 @@ class HeyGenTwinBackend(TwinBackend):
     name = "heygen"
 
     def __init__(self, client: HeyGenClient | None = None) -> None:
-        self.client = client or HeyGenClient()
+        self._client = client
+
+    @property
+    def client(self) -> HeyGenClient:
+        if self._client is None:
+            self._client = HeyGenClient()
+        return self._client
 
     def status(self) -> dict[str, Any]:
         from i_am_an_engineer.keys import key_status
 
         st = key_status(get_service("heygen"))
-        return {"name": self.name, "configured": st["present"], "key": st}
+        return {
+            "name": self.name,
+            "role": "twin+aroll",
+            "configured": bool(st["present"]),
+            "key_present": bool(st["present"]),
+            "key_source": st.get("source"),
+        }
 
     def create_digital_twin(self, footage: Path, *, name: str) -> TwinCreateResult:
         asset_id = self.client.upload_asset(footage)
@@ -252,10 +264,19 @@ class HeyGenVoiceBackend(VoiceBackend):
     name = "heygen-voice"
 
     def __init__(self, client: HeyGenClient | None = None) -> None:
-        self.client = client or HeyGenClient()
+        self._client = client
+
+    @property
+    def client(self) -> HeyGenClient:
+        if self._client is None:
+            self._client = HeyGenClient()
+        return self._client
 
     def status(self) -> dict[str, Any]:
-        return HeyGenTwinBackend(self.client).status()
+        st = HeyGenTwinBackend(self._client).status()
+        st["name"] = self.name
+        st["role"] = "voice"
+        return st
 
     def clone_instant(self, samples: list[Path], *, name: str) -> VoiceCloneResult:
         # Instant clone from twin footage is automatic; dedicated IVC endpoint:

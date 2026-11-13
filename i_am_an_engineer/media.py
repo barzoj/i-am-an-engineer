@@ -323,7 +323,7 @@ def make_synthetic_clip(
     fps: int = 30,
     rotate_metadata: bool = False,
 ) -> Path:
-    """Tiny solid-color test clip (no faces). Used in CI."""
+    """Tiny solid-color test clip (no faces). Used for normalize tests — not for ASR dry-run."""
     if not which("ffmpeg"):
         die("ffmpeg required to generate synthetic test clip")
     ensure_dir(dest.parent)
@@ -351,4 +351,56 @@ def make_synthetic_clip(
         # Simulate an iPhone portrait tag without real phone media.
         cmd[-1:-1] = ["-metadata:s:v:0", "rotate=90"]
     run(cmd, check=True)
+    return dest
+
+
+def make_spoken_sample(
+    dest: Path,
+    *,
+    text: str = (
+        "Most founders cannot deliver a calm confident take on camera. "
+        "Record once. Train your digital twin. Then cut a professional English ad."
+    ),
+    width: int = 1280,
+    height: int = 720,
+    fps: int = 30,
+) -> Path:
+    """Realistic acceptance sample: solid color + espeak-ng English TTS (no faces).
+
+    Requires ffmpeg and espeak-ng. Dry-run captions are burned from ASR of this audio.
+    Synthetic samples are for dry-run only — never train a HeyGen twin on them.
+    """
+    if not which("ffmpeg"):
+        die("ffmpeg required to generate spoken sample")
+    if not which("espeak-ng") and not which("espeak"):
+        die("espeak-ng (or espeak) required for spoken acceptance sample")
+    ensure_dir(dest.parent)
+    import tempfile
+
+    espeak = which("espeak-ng") or which("espeak")
+    with tempfile.TemporaryDirectory() as td:
+        wav = Path(td) / "tts.wav"
+        run([espeak, "-v", "en-us", "-w", str(wav), text], check=True)
+        # Probe duration from wav via ffprobe when possible; else let -shortest trim.
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-f",
+            "lavfi",
+            "-i",
+            f"color=c=0x1a1a2e:s={width}x{height}:r={fps}",
+            "-i",
+            str(wav),
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            "-c:a",
+            "aac",
+            "-shortest",
+            "-movflags",
+            "+faststart",
+            str(dest),
+        ]
+        run(cmd, check=True)
     return dest

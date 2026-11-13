@@ -119,6 +119,29 @@ def check_project(root: Path) -> tuple[list[str], list[str]]:
     return fails, warns
 
 
+def _git_ignored(repo: Path, path: Path) -> bool:
+    """True when git check-ignore says the path is ignored (or .git missing → use suffix heuristics)."""
+    import subprocess
+
+    git = repo / ".git"
+    if not git.exists():
+        # Heuristic: common media / scaffolding names are treated as ignored
+        name = path.name
+        if name in {"ADLOG.md", "ACCEPTANCE_REPORT.md", "project.yaml", "sample.mov"}:
+            return True
+        if path.suffix.lower() in MEDIA_EXT:
+            return True
+        return False
+    try:
+        r = subprocess.run(
+            ["git", "-C", str(repo), "check-ignore", "-q", str(path)],
+            capture_output=True,
+        )
+        return r.returncode == 0
+    except OSError:
+        return False
+
+
 def check_repo(repo: Path) -> tuple[list[str], list[str]]:
     fails: list[str] = []
     warns: list[str] = []
@@ -129,15 +152,23 @@ def check_repo(repo: Path) -> tuple[list[str], list[str]]:
     ]
     for f in files:
         rel = f.relative_to(repo).as_posix()
+        ignored = _git_ignored(repo, f)
         if f.name in BLOCKED_NAMES or f.name.endswith(".env"):
-            fails.append(f"secret/env file tracked: {rel}")
+            if not ignored:
+                fails.append(f"secret/env file tracked: {rel}")
+            continue
         if f.suffix.lower() in MEDIA_EXT and "examples/fixture-readme" not in rel:
+            if ignored:
+                # Local dry-run artifacts (sample.mov etc.) are gitignored — do not warn.
+                continue
             # Block personal media outside licensed fixture
             if any(part in rel for part in ("recordings/", "exports/", "work/", "consent/")):
                 fails.append(f"media file that should not be committed: {rel}")
             elif f.stat().st_size > 100_000:
                 warns.append(f"large media file in repo: {rel}")
         if f.suffix.lower() in TEXT_EXT or f.name in BLOCKED_NAMES:
+            if ignored:
+                continue
             try:
                 txt = f.read_text(errors="replace")
             except OSError:

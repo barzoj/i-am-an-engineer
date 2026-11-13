@@ -81,13 +81,26 @@ class FalBrollBackend(BrollBackend):
     name = "fal"
 
     def __init__(self, client: FalClient | None = None) -> None:
-        self.client = client or FalClient()
+        self._client = client
+
+    @property
+    def client(self) -> FalClient:
+        if self._client is None:
+            self._client = FalClient()
+        return self._client
 
     def status(self) -> dict[str, Any]:
         from i_am_an_engineer.keys import key_status
 
         st = key_status(get_service("fal"))
-        return {"name": self.name, "configured": st["present"], "key": st, "default_model": DEFAULT_MODEL}
+        return {
+            "name": self.name,
+            "role": "broll",
+            "configured": bool(st["present"]),
+            "key_present": bool(st["present"]),
+            "key_source": st.get("source"),
+            "default_model": DEFAULT_MODEL,
+        }
 
     def generate(
         self,

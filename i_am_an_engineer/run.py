@@ -57,12 +57,28 @@ def dry_run(root: Path, input_ref: str, *, ratios: list[str] | None = None) -> d
         die("dry-run: ingest produced no normalized mp4")
     master = masters[-1]
 
-    # 2) transcribe (stub — no paid ASR)
+    # 2) real local ASR (faster-whisper) — captions must come from the plate audio
     from i_am_an_engineer.transcribe import cmd_transcribe
 
-    cmd_transcribe(SimpleNamespace(project=str(root), files=[str(master)], engine="stub"))
+    cmd_transcribe(
+        SimpleNamespace(
+            project=str(root),
+            files=[str(master)],
+            engine="faster-whisper",
+            model="tiny",
+        )
+    )
+    transcript_path = root / "work" / "transcripts" / f"{master.stem}.json"
+    if not transcript_path.is_file():
+        die("dry-run: transcription did not write a transcript JSON")
+    tr = json.loads(transcript_path.read_text(encoding="utf-8"))
+    if tr.get("engine") == "stub" or not (tr.get("text") or "").strip() or str(tr.get("text")).startswith("[stub"):
+        die(
+            "dry-run requires a real faster-whisper transcript of the input audio "
+            "(not the template script). Ensure deps installed via bin/iae / uv."
+        )
 
-    # 3) compose: framings + captions + loudness (−14 LUFS)
+    # 3) compose: framings + captions from transcript + loudness (−14 LUFS)
     from i_am_an_engineer.compose import cmd_compose
 
     cmd_compose(
@@ -71,6 +87,7 @@ def dry_run(root: Path, input_ref: str, *, ratios: list[str] | None = None) -> d
             aroll=str(master),
             broll=[],
             plan_only=False,
+            captions_from=str(transcript_path),
         )
     )
 
@@ -85,9 +102,16 @@ def dry_run(root: Path, input_ref: str, *, ratios: list[str] | None = None) -> d
         "mode": "dry-run",
         "input": input_ref,
         "normalized": str(master),
+        "transcript": str(transcript_path),
+        "transcript_engine": tr.get("engine"),
+        "caption_source": "transcript",
         "compose_outputs": outputs,
         "exports_manifest": str(root / "exports" / "manifest.json"),
-        "note": "No API backends called. Normalized plate used as A-roll stand-in.",
+        "note": (
+            "No API backends called. Normalized plate used as A-roll stand-in. "
+            "Captions burned from faster-whisper transcript of the input audio. "
+            "Synthetic/no-face samples are dry-run only — do not train a twin on them."
+        ),
     }
     (ensure_dir(root / "work") / "dry_run.json").write_text(
         json.dumps(result, indent=2), encoding="utf-8"

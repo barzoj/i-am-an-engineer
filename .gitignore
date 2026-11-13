@@ -14,6 +14,14 @@ dist/
 *.log
 skills-lock.json
 
+# Agent run scaffolding (created when the clone IS the project)
+ADLOG.md
+ACCEPTANCE_REPORT.md
+/project.yaml
+/script/
+/consent/
+/sample.mov
+/sample.mp4
 
 # Project media and working files (never commit real faces/voices)
 recordings/
